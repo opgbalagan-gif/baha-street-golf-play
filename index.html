@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#17251e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>STREET GOLF — FORYGUNZ</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}
+    body{background:radial-gradient(ellipse at 50% 25%,#2f5040,#111b17 80%);color:#f1e3c6;font-family:Impact,'Arial Narrow',system-ui,sans-serif;display:grid;place-items:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+    #stage{position:relative;width:min(100vw,calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom))*9/16));aspect-ratio:9/16;overflow:hidden;background:#1686d7;box-shadow:0 0 80px #0008;isolation:isolate}
+    #canvas{display:block;width:100%;height:100%;border:0;outline:none;touch-action:none}
+    #loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at top,#344d32,#131e19 74%);padding:10%;text-align:center}
+    #loading::after{content:'';position:absolute;inset:14px;border:2px solid #baa982;outline:1px solid #63684c;outline-offset:4px;border-radius:20px;pointer-events:none}
+    .crown{width:50px;height:44px;stroke:#edd09a;fill:none;stroke-width:3;stroke-linejoin:round}
+    h1{margin:18px 0 5px;font-size:clamp(38px,9vw,76px);line-height:.92;letter-spacing:-.03em;transform:rotate(-4deg);text-shadow:3px 4px #050c08}
+    .artist{font-size:18px;letter-spacing:.24em;color:#c9b684;margin:18px 0 44px}
+    progress{width:75%;height:10px;accent-color:#e1b640;border:1px solid #c6b383;background:#0d1611}
+    #status{font-family:system-ui,sans-serif;font-size:14px;line-height:1.5;color:#cbc7ac}
+    #retry{padding:12px 24px;border:2px solid #ccbd98;border-radius:9px;background:#1e3024;color:#efe2c4;font:700 16px system-ui;cursor:pointer}
+    [hidden]{display:none!important}noscript{position:absolute;inset:40% 10%;padding:20px;background:#17251e;color:#eeddb7;z-index:2}
+  </style>
+  
+</head>
+<body>
+  <main id="stage" aria-label="Игра Street Golf">
+    <canvas id="canvas" width="720" height="1280" tabindex="0" aria-label="Игровое поле. Коснись, чтобы ударить по мячу.">Для игры нужен браузер с поддержкой Canvas.</canvas>
+    <section id="loading" aria-live="polite">
+      <svg class="crown" viewBox="0 0 48 42" aria-hidden="true"><path d="M5 10L11 30H37L43 10 31 20 24 3 17 20Z M13 37H35"/></svg>
+      <h1>STREET<br>GOLF</h1><div class="artist">FORYGUNZ</div>
+      <progress id="progress" max="100" value="0" aria-label="Загрузка игры"></progress>
+      <p id="status">Выходим в парк…</p><button id="retry" hidden>Попробовать ещё раз</button>
+    </section>
+    <noscript>Включи JavaScript, чтобы запустить игру.</noscript>
+  </main>
+  <script src="index.js"></script>
+  <script>
+    const config={"args":[],"canvasResizePolicy":0,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":19957896,"index.wasm":37695054},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+    // Size the render buffer to the portrait container, not the whole browser.
+    config.canvasResizePolicy=0;
+    const canvas=document.getElementById('canvas');
+    function resizeCanvas(){
+      const rect=document.getElementById('stage').getBoundingClientRect();
+      const scale=Math.min(window.devicePixelRatio||1,2,1080/Math.max(1,rect.width));
+      const width=Math.max(1,Math.round(rect.width*scale));
+      const height=Math.round(width*16/9);
+      if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
+    }
+    resizeCanvas();
+    new ResizeObserver(resizeCanvas).observe(document.getElementById('stage'));
+    const engine=new Engine(config);
+    const progress=document.getElementById('progress');
+    const status=document.getElementById('status');
+    const retry=document.getElementById('retry');
+    retry.addEventListener('click',()=>location.reload());
+    function fail(error){console.error(error);status.textContent='Не удалось открыть игру. Проверь соединение и попробуй ещё раз.';progress.hidden=true;retry.hidden=false;}
+    const missing=Engine.getMissingFeatures({threads:false});
+    if(missing.length){status.textContent='Для игры нужен современный браузер с WebGL 2. Попробуй открыть её в Chrome, Safari или Firefox.';progress.hidden=true;}
+    else engine.startGame({canvas,onProgress(current,total){if(total>0){progress.value=Math.round(current/total*100);status.textContent=progress.value<100?'Выходим в парк… '+progress.value+'%':'Парк готовится…';}}}).then(()=>{document.getElementById('loading').remove();canvas.focus();},fail);
+  </script>
+</body>
+</html>
+
