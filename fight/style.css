@@ -7,6 +7,9 @@ body{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(
 .video-stack{background:#000 url('assets/poster.jpg') center/contain no-repeat}
 .video-stack video{object-fit:contain;opacity:0;pointer-events:none;background:#000}
 .video-stack video.active{opacity:1}
+.buffering{position:absolute;inset:0;z-index:4;display:grid;place-items:center;pointer-events:none}
+.buffering span{width:3.5cqw;aspect-ratio:1;border:2px solid #ffffff35;border-top-color:#fffaf0;border-radius:50%;animation:buffer-spin .8s linear infinite;filter:drop-shadow(0 2px 4px #000)}
+@keyframes buffer-spin{to{transform:rotate(360deg)}}
 .health-bars{position:absolute;top:1%;left:2.7%;right:2.7%;display:flex;justify-content:space-between;pointer-events:none;z-index:2}
 .health-art{position:relative;width:43%;aspect-ratio:2172/500;overflow:hidden;filter:drop-shadow(0 2px 4px #0009)}
 .health-art img{position:absolute;width:100%;height:auto;top:-14%;left:0;pointer-events:none}

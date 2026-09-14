@@ -20,16 +20,19 @@ const fighterNames = ['FORYGUNZ', 'МУТКИ'];
 const practiceTaps = [0, 0];
 let tutorialPhase = null, tutorialRemaining = 0;
 let timerLabel = '';
+let runAbort = new AbortController();
+const mediaVersion = 'fast-1';
 
 function show(id, visible) { $(id).hidden = !visible; }
 function syncSoundtrack(restart = false) {
   if (restart) soundtrack.currentTime = 0;
   soundtrack.muted = !sound;
-  if (paused || match.state === 'menu') { soundtrack.pause(); return; }
+  if (paused || !sound || match.state === 'menu') { soundtrack.pause(); return; }
+  if (!soundtrack.getAttribute('src')) soundtrack.src = soundtrack.dataset.src;
   const token = run;
   // Called directly from Start/resume so browsers allow music after the gesture.
   void soundtrack.play().catch(error => {
-    if (token === run && !paused && match.state !== 'menu') failure(error);
+    if (token === run && !paused && sound && match.state !== 'menu' && error.name !== 'AbortError') console.warn('Music unavailable:', error);
   });
 }
 function tone(kind = 'tap') {
@@ -55,6 +58,7 @@ function delay(milliseconds, token = run) {
 }
 function cancelRun() {
   run++;
+  runAbort.abort(); runAbort = new AbortController();
   soundtrack.pause();
   cancelClip?.();
   for (const item of scheduled) item.resolve(false);
@@ -63,6 +67,7 @@ function cancelRun() {
   $('stage').classList.remove('negative');
   clearTapFeedback();
   show('duel-timer', false);
+  show('buffering', false);
   show('round-callout', false);
   show('result', false);
   show('fighter-select', false);
@@ -77,58 +82,94 @@ function failure(error) {
   show('error', true);
   $('retry').focus();
 }
-function waitForMedia(video) {
-  const hasTrack = () => video.tagName === 'AUDIO' || video.videoWidth > 0;
-  if (video.readyState >= 2 && hasTrack()) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const cleanup = () => { clearTimeout(timer); video.removeEventListener('loadeddata', loaded); video.removeEventListener('error', failed); };
-    const loaded = () => { cleanup(); hasTrack() ? resolve() : reject(new Error(`No video track: ${video.src}`)); };
-    const failed = () => { cleanup(); reject(new Error(`Media failed: ${video.src}`)); };
-    const timer = setTimeout(failed, 30000);
-    video.addEventListener('loadeddata', loaded, { once: true });
-    video.addEventListener('error', failed, { once: true });
-  });
-}
-async function activate(name, token = run) {
+function requestMedia(name) {
   const video = videoMap.get(name);
-  await waitForMedia(video);
-  if (token !== run) return null;
-  video.currentTime = 0;
-  video.muted = name === 'idle' || !sound;
-  if (!paused) await video.play();
-  if (token !== run) { video.pause(); return null; }
-  // Switch only after the first frame is ready; keep the old frame behind it.
-  if (!paused && video.requestVideoFrameCallback) {
-    await new Promise(resolve => {
-      const timer = setTimeout(resolve, 150);
-      video.requestVideoFrameCallback(() => { clearTimeout(timer); resolve(); });
-    });
+  if (!video.getAttribute('src')) {
+    video.preload = 'auto';
+    video.src = `assets/${name}.mp4?v=${mediaVersion}`;
   }
-  if (token !== run) { video.pause(); return null; }
-  if (active && active !== video) { active.pause(); active.classList.remove('active'); }
-  active = video; video.classList.add('active');
-  if (paused) video.pause();
   return video;
 }
-async function playOnce(name, token) {
-  const video = await activate(name, token);
-  if (!video || token !== run) return false;
-  if (match.state === 'intro' && skipIntros) { video.pause(); return false; }
+function waitForMedia(video, signal) {
+  const hasTrack = () => video.tagName === 'AUDIO' || video.videoWidth > 0;
+  if (signal.aborted) return Promise.resolve(false);
+  if (video.error) return Promise.reject(new Error(`Media failed: ${video.src}`));
+  if (video.readyState >= 2 && hasTrack()) return Promise.resolve(true);
   return new Promise((resolve, reject) => {
-    let settled = false;
     const cleanup = () => {
-      video.removeEventListener('ended', ended); video.removeEventListener('error', errored);
-      if (cancelClip === cancel) cancelClip = null;
+      clearTimeout(timer);
+      for (const event of ['loadeddata', 'canplay', 'progress']) video.removeEventListener(event, loaded);
+      video.removeEventListener('error', failed); signal.removeEventListener('abort', cancelled);
     };
-    const finish = completed => { if (settled) return; settled = true; cleanup(); resolve(completed); };
-    const ended = () => finish(true);
-    const cancel = () => { video.pause(); finish(false); };
-    const errored = () => { if (settled) return; settled = true; cleanup(); reject(new Error(`Playback failed: ${name}`)); };
-    cancelClip = cancel;
-    video.addEventListener('ended', ended, { once: true });
-    video.addEventListener('error', errored, { once: true });
-    if (video.ended) ended();
+    const loaded = () => { if (video.readyState >= 2 && hasTrack()) { cleanup(); resolve(true); } };
+    const failed = () => { cleanup(); reject(new Error(`Media failed: ${video.src}`)); };
+    const cancelled = () => { cleanup(); resolve(false); };
+    const timer = setTimeout(failed, 45000);
+    for (const event of ['loadeddata', 'canplay', 'progress']) video.addEventListener(event, loaded);
+    video.addEventListener('error', failed, { once: true });
+    signal.addEventListener('abort', cancelled, { once: true });
   });
+}
+async function activate(name, token = run, signal = runAbort.signal) {
+  if (token !== run || signal.aborted) return null;
+  const video = requestMedia(name);
+  const loadingIndicator = setTimeout(() => { if (token === run && !signal.aborted) show('buffering', true); }, 400);
+  const stop = () => video.pause();
+  signal.addEventListener('abort', stop, { once: true });
+  try {
+    if (!await waitForMedia(video, signal) || token !== run || signal.aborted) return null;
+    video.currentTime = 0;
+    video.muted = name === 'idle' || !sound;
+    if (!paused) await video.play();
+    if (token !== run || signal.aborted) { video.pause(); return null; }
+    // Keep the previous picture visible until the requested clip can display a frame.
+    if (!paused && video.requestVideoFrameCallback) {
+      await new Promise(resolve => {
+        const timer = setTimeout(resolve, 150);
+        video.requestVideoFrameCallback(() => { clearTimeout(timer); resolve(); });
+      });
+    }
+    if (token !== run || signal.aborted) { video.pause(); return null; }
+    if (active && active !== video) { active.pause(); active.classList.remove('active'); }
+    active = video; video.classList.add('active');
+    if (paused) video.pause();
+    const nextIntro = introSequence[introSequence.indexOf(name) + 1];
+    if (match.state === 'intro' && introSequence.includes(name) && !skipIntros) requestMedia(nextIntro || 'idle');
+    if (name === 'idle') warmFight();
+    return video;
+  } catch (error) {
+    if (token !== run || signal.aborted) return null;
+    throw error;
+  } finally {
+    clearTimeout(loadingIndicator); signal.removeEventListener('abort', stop);
+    if (token === run) show('buffering', false);
+  }
+}
+async function playOnce(name, token) {
+  const controller = new AbortController(), runSignal = runAbort.signal;
+  const cancel = () => controller.abort();
+  cancelClip = cancel; runSignal.addEventListener('abort', cancel, { once: true });
+  try {
+    const video = await activate(name, token, controller.signal);
+    if (!video || token !== run || controller.signal.aborted) return false;
+    if (match.state === 'intro' && skipIntros) { video.pause(); return false; }
+    return await new Promise((resolve, reject) => {
+      const cleanup = () => {
+        video.removeEventListener('ended', ended); video.removeEventListener('error', errored);
+        controller.signal.removeEventListener('abort', cancelled);
+      };
+      const ended = () => { cleanup(); resolve(true); };
+      const cancelled = () => { video.pause(); cleanup(); resolve(false); };
+      const errored = () => { cleanup(); reject(new Error(`Playback failed: ${name}`)); };
+      video.addEventListener('ended', ended, { once: true });
+      video.addEventListener('error', errored, { once: true });
+      controller.signal.addEventListener('abort', cancelled, { once: true });
+      if (video.ended) ended();
+    });
+  } finally {
+    runSignal.removeEventListener('abort', cancel);
+    if (cancelClip === cancel) cancelClip = null;
+  }
 }
 function updateHealth() {
   ['left', 'right'].forEach((side, i) => {
@@ -329,12 +370,8 @@ async function exchange(token) {
     match.finishExchange();
   } else {
     const finalHit = match.health[1 - winner] === 1;
-    let clip;
-    if (finalHit) clip = winner === 0 ? 'victory' : 'mutki-hit-3';
-    else {
-      const number = hitIndex[winner]++ % (winner === 0 ? 2 : 3) + 1;
-      clip = `${winner === 0 ? 'forygunz' : 'mutki'}-hit-${number}`;
-    }
+    const clip = nextStrikeClip(winner);
+    if (!finalHit) hitIndex[winner]++;
     counters.strikes.push({ clip, winner, round: match.round, exchange: match.exchange });
     await playOnce(clip, token);
     if (token !== run) return;
@@ -366,6 +403,14 @@ async function exchange(token) {
     beginTapRound();
   }
   resolving = false;
+}
+function nextStrikeClip(side) {
+  if (match.health[1 - side] === 1) return side === 0 ? 'victory' : 'mutki-hit-3';
+  return `${side === 0 ? 'forygunz' : 'mutki'}-hit-${hitIndex[side] % (side === 0 ? 2 : 3) + 1}`;
+}
+function warmFight() {
+  // Only the next two possible attacks share bandwidth with the idle clip.
+  requestMedia(nextStrikeClip(0)); requestMedia(nextStrikeClip(1));
 }
 function menu() {
   cancelRun(); paused = false; document.body.classList.remove('paused');
@@ -447,18 +492,14 @@ $('start-local').onclick = () => void start('local').catch(failure);
 $('play-again').onclick = menu;
 $('retry').onclick = () => location.reload();
 async function load() {
-  let count = 0;
   for (const name of clips) {
     const video = document.createElement('video');
-    video.dataset.clip = name; video.preload = 'auto'; video.playsInline = true; video.muted = true;
+    video.dataset.clip = name; video.preload = 'none'; video.playsInline = true; video.muted = true;
     video.setAttribute('playsinline', ''); video.setAttribute('webkit-playsinline', '');
-    video.loop = name === 'idle'; video.volume = introSequence.includes(name) ? .4 : .7; video.src = `assets/${name}.mp4`;
+    video.loop = name === 'idle'; video.volume = introSequence.includes(name) ? .4 : .7;
     videoMap.set(name, video); $('videos').append(video);
   }
-  await Promise.all([...clips.map(async name => {
-    await waitForMedia(videoMap.get(name));
-    $('loading').textContent = `АНИМАЦИИ ${++count} / ${clips.length}`;
-  }), waitForMedia(soundtrack)]);
+  // Menu and fighter selection do not depend on any video or audio download.
   ready = true;
   $('start-solo').disabled = false; $('start-local').disabled = false;
   show('loading', false);
