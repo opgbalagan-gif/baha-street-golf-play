@@ -17,6 +17,7 @@ let lastResult = null;
 const counters = { strikes: [], flashes: 0, intros: [] };
 const hitIndex = [0, 0];
 let openingCue = false;
+let tapHapticControl;
 let timerLabel = '';
 let runAbort = new AbortController();
 const mediaVersion = 'audio-2';
@@ -53,6 +54,28 @@ function tone(kind = 'tap') {
     oscillator.connect(gain); gain.connect(audioContext.destination);
     oscillator.start(t); oscillator.stop(t + duration + .01);
   } catch { /* Silent play remains available without Web Audio. */ }
+}
+function tapHaptic() {
+  // One short pulse per accepted input; repeated taps replace, never queue, pulses.
+  try {
+    if (typeof navigator.vibrate === 'function' && navigator.vibrate(12)) return;
+  } catch { /* Try WebKit's native switch feedback when vibration is unavailable. */ }
+  if (!navigator.maxTouchPoints) return;
+  try {
+    if (!tapHapticControl) {
+      const label = document.createElement('label');
+      label.id = 'tap-haptic'; label.style.display = 'none';
+      label.setAttribute('aria-hidden', 'true');
+      const control = document.createElement('input');
+      control.type = 'checkbox'; control.setAttribute('switch', ''); control.tabIndex = -1;
+      control.style.cssText = 'all:initial;appearance:auto;display:none';
+      label.append(control); document.body.append(label);
+      tapHapticControl = label;
+    }
+    // Invoke synchronously inside the tap gesture. A single switch click gives
+    // WebKit's short system haptic; no timer or repeating pattern is needed.
+    tapHapticControl.click();
+  } catch { /* Haptic restrictions must never interrupt scoring. */ }
 }
 function delay(milliseconds, token = run) {
   return new Promise(resolve => scheduled.push({ at: playTime + milliseconds / 1000, token, resolve }));
@@ -405,7 +428,7 @@ function input(side, event) {
     beginTapRound();
   }
   advanceTo(performance.now());
-  if (match.tap(side)) { showTapScore(side, event); tone(); if (navigator.vibrate && !reducedMotion) navigator.vibrate(8); }
+  if (match.tap(side)) { showTapScore(side, event); tone(); tapHaptic(); }
   render();
 }
 ['tap-left', 'tap-right'].forEach((id, index) => {
