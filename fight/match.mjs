@@ -38,16 +38,6 @@ export class Match {
     this.state = 'round-intro';
     return true;
   }
-  beginTutorial() {
-    if (this.state !== 'round-intro' || this.round !== 1 || this.exchange !== 0) return false;
-    this.state = 'tutorial';
-    return true;
-  }
-  finishTutorial() {
-    if (this.state !== 'tutorial') return false;
-    this.state = 'round-intro';
-    return true;
-  }
   beginExchange(countdownSeconds = 0) {
     if (!['round-intro', 'recovery'].includes(this.state) || this.health.includes(0)) return false;
     this.exchange++;

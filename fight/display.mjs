@@ -7,17 +7,29 @@ export function setupDisplay({ onHelpOpen = () => {} } = {}) {
   const refresh = () => { button.hidden = standalone() || !!fullscreenElement(); };
   const showHelp = () => {
     const apple = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const icons = {
+      safari: '<circle cx="40" cy="40" r="33" fill="#1687ed" stroke="#d5ebff" stroke-width="2"/><path d="M40 10v7m0 46v7M10 40h7m46 0h7M19 19l5 5m32 32l5 5M19 61l5-5m32-32l5-5" stroke="#ffffffb0" stroke-width="2"/><path d="M56 22L44 44 24 58 36 36Z" fill="#fff"/><path d="M56 22L44 44 36 36Z" fill="#ff4d55"/>',
+      share: '<path d="M25 30H16v39h48V30h-9M40 52V10M26 24l14-14 14 14" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>',
+      home: '<rect x="12" y="12" width="56" height="56" rx="12" fill="none" stroke="currentColor" stroke-width="5"/><path d="M40 25v30M25 40h30" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>',
+      browser: '<rect x="9" y="14" width="62" height="52" rx="10" fill="none" stroke="currentColor" stroke-width="4"/><path d="M9 29h62" stroke="currentColor" stroke-width="3"/><circle cx="19" cy="22" r="2" fill="currentColor"/><circle cx="27" cy="22" r="2" fill="currentColor"/><path d="M29 48h22m-8-8 8 8-8 8" fill="none" stroke="currentColor" stroke-width="4"/>',
+      menu: '<circle cx="40" cy="19" r="5" fill="currentColor"/><circle cx="40" cy="40" r="5" fill="currentColor"/><circle cx="40" cy="61" r="5" fill="currentColor"/>'
+    };
     const steps = apple ? [
-      'Открой эту страницу в Safari. Во встроенном браузере нажми значок компаса или «Открыть в Safari».',
-      'Нажми «Поделиться» → «На экран „Домой“». Если есть «Открывать как веб-приложение», включи этот пункт.',
-      'Нажми «Добавить» и запускай DOGMA по новой иконке.'
+      ['safari', 'Открой в Safari', 'Нажми компас внизу браузера или «Открыть в Safari».'],
+      ['share', 'Нажми «Поделиться»', 'Это квадрат со стрелкой вверх в панели Safari.'],
+      ['home', 'На экран «Домой»', 'Выбери этот пункт в меню и нажми «Добавить».']
     ] : [
-      'Открой ссылку в Chrome или Safari вне встроенного браузера.',
-      'В меню браузера выбери «Установить приложение» или «Добавить на главный экран».',
-      'Запускай DOGMA по новой иконке.'
+      ['browser', 'Открой в Chrome', 'Открой ссылку в обычном браузере, вне мессенджера.'],
+      ['menu', 'Открой меню', 'Нажми три точки в правом верхнем углу браузера.'],
+      ['home', 'Установи DOGMA', 'Выбери «Установить приложение» или «На главный экран».']
     ];
-    document.getElementById('fullscreen-help-steps').replaceChildren(...steps.map(text => {
-      const item = document.createElement('li'); item.textContent = text; return item;
+    document.getElementById('fullscreen-help-title').textContent = 'ИГРА БЕЗ ПАНЕЛЕЙ БРАУЗЕРА';
+    document.getElementById('fullscreen-help-copy').textContent = 'Один раз добавь DOGMA на домашний экран.';
+    document.getElementById('fullscreen-help-note').textContent = apple ? 'Если есть «Открывать как веб-приложение» — включи этот пункт.' : '';
+    document.getElementById('fullscreen-help-steps').replaceChildren(...steps.map(([icon, title, text], index) => {
+      const item = document.createElement('li');
+      item.innerHTML = `<svg class="install-icon" viewBox="0 0 80 80" aria-hidden="true">${icons[icon]}</svg><strong><b>${index + 1}</b>${title}</strong><p>${text}</p>`;
+      return item;
     }));
     onHelpOpen(); help.showModal();
   };

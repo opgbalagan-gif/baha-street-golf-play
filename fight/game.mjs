@@ -1,7 +1,7 @@
-import { Match, MAX_HEALTH, ROUND_SECONDS, MAX_ROUNDS, ROUNDS_TO_WIN } from './match.mjs';
+import { Match, MAX_HEALTH, ROUND_SECONDS, MAX_ROUNDS, ROUNDS_TO_WIN } from './match.mjs?v=cue-1';
 import { brushNumber } from './tap-art.mjs';
 import { SoundtrackPlayer } from './soundtrack.mjs?v=audio-2';
-import { setupDisplay } from './display.mjs?v=app-1';
+import { setupDisplay } from './display.mjs?v=cue-1';
 
 const $ = id => document.getElementById(id);
 const clips = ['logo-intro', 'opening-1', 'opening-2', 'forygunz-intro', 'mutki-intro', 'idle', 'victory', 'forygunz-hit-1', 'forygunz-hit-2', 'mutki-hit-1', 'mutki-hit-2', 'mutki-hit-3'];
@@ -16,9 +16,7 @@ let previousTime, playTime = 0, scheduled = [], flash = false, audioContext;
 let lastResult = null;
 const counters = { strikes: [], flashes: 0, intros: [] };
 const hitIndex = [0, 0];
-const fighterNames = ['FORYGUNZ', 'МУТКИ'];
-const practiceTaps = [0, 0];
-let tutorialPhase = null, tutorialRemaining = 0;
+let openingCue = false;
 let timerLabel = '';
 let runAbort = new AbortController();
 const mediaVersion = 'audio-2';
@@ -74,10 +72,7 @@ function cancelRun() {
   show('round-callout', false);
   show('result', false);
   show('fighter-select', false);
-  show('tutorial', false);
-  $('stage').classList.remove('learning');
-  practiceTaps.fill(0);
-  tutorialPhase = null; tutorialRemaining = 0;
+  clearOpeningCue();
 }
 function failure(error) {
   console.error(error);
@@ -122,6 +117,7 @@ async function activate(name, token = run, signal = runAbort.signal) {
   try {
     if (!await waitForMedia(video, signal) || token !== run || signal.aborted) return null;
     video.currentTime = 0;
+    video.playbackRate = 1;
     video.muted = name === 'idle' || !sound;
     if (!paused) await video.play();
     if (token !== run || signal.aborted) { video.pause(); return null; }
@@ -189,11 +185,10 @@ function updateHealth() {
   });
 }
 function updateTimer() {
-  const teaching = match.state === 'tutorial' && tutorialPhase !== 'complete';
-  const tapping = match.state === 'tapping' || teaching;
+  const tapping = match.state === 'tapping';
   show('duel-timer', tapping);
   if (!tapping) return;
-  const remaining = Math.max(0, Math.min(ROUND_SECONDS, teaching ? tutorialRemaining : match.remaining));
+  const remaining = Math.max(0, Math.min(ROUND_SECONDS, match.remaining));
   // The filled sphere shrinks to zero; its visible area tracks the time left.
   $('timer-progress').setAttribute('r', String(39 * Math.sqrt(remaining / ROUND_SECONDS)));
   const label = (Math.ceil(remaining * 10) / 10).toFixed(1).replace('.', ',');
@@ -244,10 +239,6 @@ function advanceTo(now) {
   previousTime = Math.max(now, previousTime ?? now);
   if (paused) return;
   playTime += dt;
-  if (match.state === 'tutorial' && tutorialPhase === 'tapping') {
-    tutorialRemaining = Math.max(0, tutorialRemaining - dt);
-    if (tutorialRemaining === 0) completeTutorial();
-  }
   const previousBotTaps = match.taps[match.botSide];
   match.advance(dt);
   if (mode === 'solo' && match.state === 'tapping' && match.taps[match.botSide] > previousBotTaps) {
@@ -275,7 +266,6 @@ async function beginFightRound(token) {
   if (token !== run || !match.beginRound()) return;
   hitIndex.fill(0);
   updateHealth();
-  if (match.round === 1) { await beginTutorial(token); return; }
   await announceRound(token);
 }
 async function announceRound(token) {
@@ -286,57 +276,22 @@ async function announceRound(token) {
   await delay(1200, token);
   if (token !== run) return;
   show('round-callout', false);
-  beginTapRound();
+  if (match.round === 1) showOpeningCue();
+  else beginTapRound();
 }
-async function beginTutorial(token) {
-  if (!match.beginTutorial()) return;
-  practiceTaps.fill(0);
-  tutorialPhase = 'explanation'; tutorialRemaining = ROUND_SECONDS;
-  if (active) { active.pause(); active.currentTime = 0; }
-  $('stage').classList.add('learning');
-  show('hud', true); show('touch-zones', false); show('tutorial', true); show('tutorial-go', false);
-  $('tutorial').dataset.phase = tutorialPhase;
-  $('tutorial-title').textContent = 'КРУГ УМЕНЬШАЕТСЯ';
-  $('tutorial-description').textContent = 'Твоя задача — сделать больше тапов, чем соперник.';
-  $('tutorial-player').textContent = mode === 'solo'
-    ? `ТЫ — ${fighterNames[match.humanSide]} · ТАПАЙ ${match.humanSide === 0 ? 'СЛЕВА · A / Ф' : 'СПРАВА · L / Д'}`
-    : 'FORYGUNZ — СЛЕВА · A / Ф        МУТКИ — СПРАВА · L / Д';
-  $('practice-left').disabled = true; $('practice-right').disabled = true;
-  await delay(4000, token);
-  if (token !== run || match.state !== 'tutorial') return;
-  tutorialPhase = 'tapping';
-  $('tutorial').dataset.phase = tutorialPhase;
-  $('tutorial-title').textContent = 'ТАПАЙ';
-  $('tutorial-description').textContent = 'Успей, пока не исчез круг!';
-  ['left', 'right'].forEach((side, i) => { $(`practice-${side}`).disabled = mode === 'solo' && i === match.botSide; });
-  $(`practice-${mode === 'solo' && match.humanSide === 1 ? 'right' : 'left'}`).focus({ preventScroll: true });
-  tone('go');
+function showOpeningCue() {
+  openingCue = true;
+  const idle = videoMap.get('idle');
+  if (idle) idle.playbackRate = .25;
+  show('cue-left', mode === 'local' || match.humanSide === 0);
+  show('cue-right', mode === 'local' || match.humanSide === 1);
+  show('start-cue', true);
 }
-function practice(side, event) {
-  if (tutorialPhase !== 'tapping' || (mode === 'solo' && side !== match.humanSide)) return;
-  advanceTo(performance.now());
-  if (tutorialPhase !== 'tapping') return;
-  practiceTaps[side]++;
-  showTapScore(side, event, practiceTaps[side]); tone();
-}
-function completeTutorial() {
-  tutorialPhase = 'complete';
-  $('tutorial').dataset.phase = tutorialPhase;
-  $('tutorial-title').textContent = 'ОТЛИЧНО';
-  $('tutorial-description').textContent = 'Теперь обгони соперника в настоящем бою.';
-  $('practice-left').disabled = true; $('practice-right').disabled = true;
-  show('tutorial-go', true);
-  $('tutorial-go').focus({ preventScroll: true });
-}
-async function finishTutorial() {
-  if (tutorialPhase !== 'complete') return;
-  if (!match.finishTutorial()) return;
-  if (paused) setPaused(false);
-  tutorialPhase = null; tutorialRemaining = 0;
-  clearTapFeedback(); $('stage').classList.remove('learning');
-  show('tutorial', false); show('hud', true); show('touch-zones', true);
-  if (active && !paused) void active.play().catch(failure);
-  await announceRound(run);
+function clearOpeningCue() {
+  openingCue = false;
+  show('start-cue', false);
+  const idle = videoMap.get('idle');
+  if (idle) idle.playbackRate = 1;
 }
 function chooseFighter() {
   if (!ready) return;
@@ -434,7 +389,7 @@ function setPaused(value) {
   if (value) for (const video of videoMap.values()) video.pause();
   else {
     previousTime = performance.now();
-    if (active && !['menu', 'result', 'tutorial'].includes(match.state)) void active.play().catch(failure);
+    if (active && !['menu', 'result'].includes(match.state)) void active.play().catch(failure);
   }
 }
 function input(side, event) {
@@ -444,12 +399,16 @@ function input(side, event) {
   if (paused) { setPaused(false); return; }
   syncSoundtrack();
   if (match.state === 'intro') { skipIntros = true; cancelClip?.(); return; }
-  if (match.state === 'tutorial') { practice(side, event); return; }
+  if (openingCue) {
+    if (mode === 'solo' && side !== match.humanSide) return;
+    clearOpeningCue();
+    beginTapRound();
+  }
   advanceTo(performance.now());
   if (match.tap(side)) { showTapScore(side, event); tone(); if (navigator.vibrate && !reducedMotion) navigator.vibrate(8); }
   render();
 }
-['tap-left', 'tap-right', 'practice-left', 'practice-right'].forEach((id, index) => {
+['tap-left', 'tap-right'].forEach((id, index) => {
   const side = index % 2;
   $(id).addEventListener('pointerdown', event => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
@@ -476,7 +435,7 @@ document.addEventListener('keydown', event => {
   if (['KeyA', 'KeyL'].includes(event.code) && match.state !== 'menu') {
     event.preventDefault(); input(event.code === 'KeyA' ? 0 : 1); return;
   }
-  if (['Space', 'Enter'].includes(event.code) && (document.activeElement?.classList.contains('touch-zone') || document.activeElement?.classList.contains('practice-zone'))) {
+  if (['Space', 'Enter'].includes(event.code) && document.activeElement?.classList.contains('touch-zone')) {
     event.preventDefault(); input(document.activeElement.id.endsWith('left') ? 0 : 1);
   }
 });
@@ -487,7 +446,6 @@ $('start-solo').onclick = chooseFighter;
 $('choose-forygunz').onclick = () => void start('solo', 0).catch(failure);
 $('choose-mutki').onclick = () => void start('solo', 1).catch(failure);
 $('selection-back').onclick = menu;
-$('tutorial-go').onclick = () => void finishTutorial().catch(failure);
 $('start-local').onclick = () => void start('local').catch(failure);
 $('play-again').onclick = menu;
 $('retry').onclick = () => location.reload();
@@ -510,7 +468,7 @@ Object.defineProperty(window, 'fight', { value: Object.freeze({ snapshot: () => 
   state: match.state, health: [...match.health], taps: [...match.taps], totalTaps: [...match.totalTaps],
   round: match.round, remaining: match.remaining, winner: match.winner, champion: match.champion,
   exchange: match.exchange, totalExchanges: match.totalExchanges, roundWins: [...match.roundWins], roundWinner: match.roundWinner,
-  mode, humanSide: match.humanSide, botSide: mode === 'solo' ? match.botSide : null, practiceTaps: [...practiceTaps], tutorialPhase, tutorialRemaining, paused, flash, ready, sound, music: soundtrack.snapshot(), clip: active?.dataset.clip,
+  mode, humanSide: match.humanSide, botSide: mode === 'solo' ? match.botSide : null, openingCue, cueSides: openingCue ? (mode === 'local' ? [0, 1] : [match.humanSide]) : [], playbackRate: active?.playbackRate, paused, flash, ready, sound, music: soundtrack.snapshot(), clip: active?.dataset.clip,
   negativeFlashes: counters.flashes, strikes: counters.strikes.map(value => ({ ...value })),
   intros: [...counters.intros], lastResult: lastResult ? { ...lastResult, health: [...lastResult.health], taps: [...lastResult.taps], roundWins: [...lastResult.roundWins] } : null
 }) }) });

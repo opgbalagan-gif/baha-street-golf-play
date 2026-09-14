@@ -12,12 +12,16 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/app-icon-180.png">
   <title>DOGMA FIGHT — Короли улиц</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64'/%3E%3Ctext x='10' y='50' font-size='50' fill='white' font-family='serif'%3ED%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="style.css?v=app-1">
+  <link rel="stylesheet" href="style.css?v=cue-1">
 </head>
 <body>
   <main class="stage" id="stage" aria-label="DOGMA. Короли улиц. Горизонтальный файтинг">
     <div class="video-stack" id="videos" aria-hidden="true" hidden></div>
     <img class="corner-logo" src="assets/dogma-watermark.webp" alt="" aria-hidden="true" draggable="false" loading="lazy">
+    <div class="start-cue" id="start-cue" role="status" hidden>
+      <div class="cue-side cue-left" id="cue-left" hidden><span>ЖМИ</span></div>
+      <div class="cue-side cue-right" id="cue-right" hidden><span>ЖМИ</span></div>
+    </div>
     <div class="health-bars" id="hud" hidden>
       <div class="health-art" id="health-left" role="progressbar" aria-label="Здоровье FORYGUNZ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><img src="assets/health-empty.webp" alt=""><img class="health-fill" src="assets/health-full.webp" alt=""></div>
       <div class="health-art mirrored" id="health-right" role="progressbar" aria-label="Здоровье Мутки" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><img src="assets/health-empty.webp" alt=""><img class="health-fill" src="assets/health-full.webp" alt=""></div>
@@ -56,19 +60,6 @@
       <p class="selection-note">Нажми на бойца, чтобы начать</p>
       <button class="text-button" id="selection-back">НАЗАД</button>
     </section>
-    <section class="tutorial" id="tutorial" aria-labelledby="tutorial-title" hidden>
-      <div class="tutorial-copy" role="status">
-        <p class="tutorial-eyebrow">ОБУЧЕНИЕ · РАУНД 1</p>
-        <h1 id="tutorial-title">КРУГ УМЕНЬШАЕТСЯ</h1>
-        <p id="tutorial-description">Твоя задача — сделать больше тапов, чем соперник.</p>
-      </div>
-      <div class="practice-zones">
-        <button class="practice-zone" id="practice-left" aria-label="Учебные тапы FORYGUNZ. Клавиша A или Ф"></button>
-        <button class="practice-zone" id="practice-right" aria-label="Учебные тапы Мутки. Клавиша L или Д"></button>
-      </div>
-      <p id="tutorial-player" class="tutorial-controls"></p>
-      <button class="action-button" id="tutorial-go" hidden>В БОЙ</button>
-    </section>
     <section class="result-screen" id="result" aria-labelledby="victory-title" hidden>
       <div class="result-content"><h1 id="victory-title">ПОБЕДА</h1><p id="winner-name"></p><button id="play-again">ИГРАТЬ ЕЩЁ РАЗ</button></div>
     </section>
@@ -78,9 +69,10 @@
     <h2 id="fullscreen-help-title">ИГРА НА ВЕСЬ ЭКРАН</h2>
     <p id="fullscreen-help-copy">Добавь DOGMA на домашний экран и запускай по иконке.</p>
     <ol id="fullscreen-help-steps"></ol>
-    <button id="fullscreen-help-close">ПОНЯТНО</button>
+    <p id="fullscreen-help-note" class="fullscreen-help-note"></p>
+    <div class="fullscreen-help-footer"><img src="assets/app-icon-180.png" width="44" height="44" alt="Иконка DOGMA" loading="lazy"><span>Потом запускай игру<br>по этой иконке</span><button id="fullscreen-help-close">ПОНЯТНО</button></div>
   </dialog>
   <noscript>Включи JavaScript, чтобы запустить игру.</noscript>
-  <script type="module" src="game.mjs?v=app-1"></script>
+  <script type="module" src="game.mjs?v=cue-1"></script>
 </body>
 </html>
