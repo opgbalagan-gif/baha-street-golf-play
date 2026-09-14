@@ -1,4 +1,10 @@
-# STREET GOLF — FORYGUNZ
+# DOGMA FIGHT — FORYGUNZ × Мутки
+
+[Играть в DOGMA FIGHT на телефоне](https://opgbalagan-gif.github.io/baha-street-golf-play/fight/)
+
+Горизонтальный видеофайтинг: выберите одного или двух игроков. В одиночном режиме можно выбрать бойца. Перед первым раундом — обучение; матч идёт до двух побед. На телефоне поверните экран горизонтально и тапайте по своей стороне. Первая загрузка включает около 42 МБ видео, изображений и звука.
+
+## STREET GOLF — FORYGUNZ
 
 [Играть в браузере](https://opgbalagan-gif.github.io/baha-street-golf-play/)
 

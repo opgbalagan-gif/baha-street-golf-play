@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>DOGMA FIGHT — Короли улиц</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64'/%3E%3Ctext x='10' y='50' font-size='50' fill='white' font-family='serif'%3ED%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="stage" id="stage" aria-label="DOGMA. Короли улиц. Горизонтальный файтинг">
+    <div class="video-stack" id="videos" hidden></div>
+    <div class="health-bars" id="hud" hidden>
+      <div class="health-art" id="health-left" role="progressbar" aria-label="Здоровье FORYGUNZ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><img src="assets/health-empty.png" alt=""><img class="health-fill" src="assets/health-full.png" alt=""></div>
+      <div class="health-art mirrored" id="health-right" role="progressbar" aria-label="Здоровье Мутки" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><img src="assets/health-empty.png" alt=""><img class="health-fill" src="assets/health-full.png" alt=""></div>
+      <div class="round-wins left" id="round-wins-left" role="img" aria-label="FORYGUNZ: 0 побед в раундах из 2"><i></i><i></i></div>
+      <div class="round-wins right" id="round-wins-right" role="img" aria-label="Мутки: 0 побед в раундах из 2"><i></i><i></i></div>
+      <div class="duel-timer" id="duel-timer" role="timer" aria-label="Время на тапы" hidden>
+        <svg class="timer-ring" viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="timer-glow" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".55" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity=".25"/></radialGradient></defs><circle class="timer-face" cx="50" cy="50" r="45"/><circle class="timer-sphere" id="timer-progress" cx="50" cy="50" r="39"/></svg>
+      </div>
+    </div>
+    <div class="tap-feedback" id="tap-feedback" aria-hidden="true"></div>
+    <div class="round-callout" id="round-callout" role="status" hidden><span class="round-caption">РАУНД</span><span class="round-number" id="round-number"></span></div>
+    <div class="touch-zones" id="touch-zones" hidden>
+      <button class="touch-zone" id="tap-left" aria-label="Тап FORYGUNZ. Клавиша A или Ф"></button>
+      <button class="touch-zone" id="tap-right" aria-label="Тап Мутки. Клавиша L или Д"></button>
+    </div>
+    <section class="title-screen" id="menu" aria-label="Начальный экран">
+      <img class="logo" src="assets/logo.png" alt="DOGMA. Короли улиц" draggable="false">
+      <div class="start-options"><button id="start-solo" disabled>1 ИГРОК</button><button id="start-local" disabled>2 ИГРОКА</button></div>
+      <p class="title-note" id="loading" role="status">ЗАГРУЖАЕМ АНИМАЦИИ</p>
+    </section>
+    <section class="fighter-select" id="fighter-select" aria-labelledby="selection-title" hidden>
+      <p class="selection-eyebrow">1 ИГРОК · ПРОТИВ БОТА</p>
+      <h1 id="selection-title">ВЫБЕРИ БОЙЦА</h1>
+      <div class="fighter-options">
+        <button class="fighter-card" id="choose-forygunz" aria-label="Играть за FORYGUNZ">
+          <img src="assets/forygunz-portrait.jpg" alt="" draggable="false">
+          <span class="fighter-caption"><strong>FORYGUNZ</strong></span>
+        </button>
+        <button class="fighter-card" id="choose-mutki" aria-label="Играть за Мутки">
+          <img src="assets/mutki-portrait.jpg" alt="" draggable="false">
+          <span class="fighter-caption"><strong>МУТКИ</strong></span>
+        </button>
+      </div>
+      <p class="selection-note">Нажми на бойца, чтобы начать</p>
+      <button class="text-button" id="selection-back">НАЗАД</button>
+    </section>
+    <section class="tutorial" id="tutorial" aria-labelledby="tutorial-title" hidden>
+      <div class="tutorial-copy" role="status">
+        <p class="tutorial-eyebrow">ОБУЧЕНИЕ · РАУНД 1</p>
+        <h1 id="tutorial-title">КРУГ УМЕНЬШАЕТСЯ</h1>
+        <p id="tutorial-description">Твоя задача — сделать больше тапов, чем соперник.</p>
+      </div>
+      <div class="practice-zones">
+        <button class="practice-zone" id="practice-left" aria-label="Учебные тапы FORYGUNZ. Клавиша A или Ф"></button>
+        <button class="practice-zone" id="practice-right" aria-label="Учебные тапы Мутки. Клавиша L или Д"></button>
+      </div>
+      <p id="tutorial-player" class="tutorial-controls"></p>
+      <button class="action-button" id="tutorial-go" hidden>В БОЙ</button>
+    </section>
+    <section class="result-screen" id="result" aria-labelledby="victory-title" hidden>
+      <div class="result-content"><h1 id="victory-title">ПОБЕДА</h1><p id="winner-name"></p><button id="play-again">ИГРАТЬ ЕЩЁ РАЗ</button></div>
+    </section>
+    <section class="error-screen" id="error" role="alert" hidden><p>Не удалось загрузить видео или звук.</p><button id="retry">ПОПРОБОВАТЬ ЕЩЁ РАЗ</button></section>
+  </main>
+  <noscript>Включи JavaScript, чтобы запустить игру.</noscript>
+  <audio id="soundtrack" src="assets/drop-top-parking.mp3" preload="auto" loop hidden></audio>
+  <script type="module" src="game.mjs"></script>
+</body>
+</html>

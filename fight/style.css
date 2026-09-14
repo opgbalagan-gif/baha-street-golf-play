@@ -1,0 +1,87 @@
+*{box-sizing:border-box}[hidden]{display:none!important}
+:root{color-scheme:dark;background:#000;color:#eae4d8;font-family:Arial,Helvetica,sans-serif}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#000;overscroll-behavior:none}
+body{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);place-items:center;-webkit-tap-highlight-color:transparent}
+.stage{position:relative;width:min(100vw,calc(100dvh * 16 / 9));aspect-ratio:16/9;isolation:isolate;container-type:inline-size;background:#000;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:none}
+.video-stack,.video-stack video{position:absolute;inset:0;width:100%;height:100%}
+.video-stack{background:#000 url('assets/poster.jpg') center/contain no-repeat}
+.video-stack video{object-fit:contain;opacity:0;pointer-events:none;background:#000}
+.video-stack video.active{opacity:1}
+.health-bars{position:absolute;top:1%;left:2.7%;right:2.7%;display:flex;justify-content:space-between;pointer-events:none;z-index:2}
+.health-art{position:relative;width:43%;aspect-ratio:2172/500;overflow:hidden;filter:drop-shadow(0 2px 4px #0009)}
+.health-art img{position:absolute;width:100%;height:auto;top:-14%;left:0;pointer-events:none}
+.health-fill{clip-path:inset(0 var(--cut,0%) 0 0);transition:clip-path .3s ease-out}
+.mirrored{transform:scaleX(-1)}
+.round-wins{position:absolute;top:100%;display:flex;gap:.75cqw;filter:drop-shadow(0 2px 2px #000)}
+.round-wins.left{left:5%}.round-wins.right{right:5%;flex-direction:row-reverse}
+.round-wins i{display:block;width:.9cqw;aspect-ratio:1;border:1px solid #d6cdb899;border-radius:50%;background:#17140ecc}
+.round-wins i.won{background:#eee5d1;border-color:#fff5dc;box-shadow:0 0 7px #e6d6aa66}
+.round-callout{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1cqw;pointer-events:none;z-index:4;color:#fffaf0;filter:drop-shadow(2px 3px 1px #000) drop-shadow(0 0 18px #000)}
+.round-caption{font:italic 900 2.4cqw Arial,sans-serif;letter-spacing:.6cqw;transform:rotate(-6deg)}
+.round-number{display:block;width:8cqw;transform:rotate(-7deg)}
+.round-number svg{display:block;width:100%;height:auto}
+.duel-timer{position:absolute;left:50%;top:50%;width:8%;aspect-ratio:1;transform:translate(-50%,-50%);color:#fffaf0;filter:drop-shadow(0 3px 3px #000b)}
+.timer-ring{display:block;width:100%;height:100%;overflow:visible}
+.timer-face{fill:#100e0b80;stroke:#ffffff35;stroke-width:1}
+.timer-sphere{fill:url(#timer-glow)}
+.tap-feedback{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden}
+.tap-ripple{position:absolute;z-index:0;width:7.5%;aspect-ratio:1;border-radius:50%;background:#ffffff30;border:1.5px solid #ffffff8c;box-shadow:0 0 12px #ffffff18;animation:tap-ripple .42s ease-out both;will-change:transform,opacity}
+@keyframes tap-ripple{0%{opacity:1;transform:translate(-50%,-50%) scale(.45)}25%{opacity:1;transform:translate(-50%,-50%) scale(.8)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.25)}}
+.tap-score{position:absolute;z-index:1;display:block;color:#fff;transform-origin:50% 85%;filter:drop-shadow(2px 3px 0 #080706) drop-shadow(-1px -1px 0 #080706) drop-shadow(0 3px 5px #0008);animation:tap-rise .62s ease-out both;will-change:transform,opacity}
+.tap-score svg{width:100%;height:auto;display:block;overflow:visible}
+.tap-score.older svg{opacity:.35}
+@keyframes tap-rise{0%{opacity:1;transform:translate(-50%,-83%) rotate(-10deg) scale(.65)}18%{opacity:1;transform:translate(-50%,-106%) rotate(-7deg) scale(1.12)}58%{opacity:1;transform:translate(-50%,-130%) rotate(-7deg) scale(1)}100%{opacity:0;transform:translate(-50%,-177%) rotate(-7deg) scale(.93)}}
+.touch-zones{position:absolute;inset:0;display:flex;z-index:3}
+.touch-zone{display:block;width:50%;height:100%;padding:0;border:0;background:none;outline:0;color:transparent;touch-action:none;cursor:pointer}
+.touch-zone:focus-visible{outline:1px solid #ffffff14;outline-offset:-2px}
+.title-screen{position:absolute;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:5}
+.logo{position:absolute;top:4%;width:80%;height:74%;object-fit:contain;pointer-events:none}
+.start-options{position:absolute;top:80%;display:flex;gap:clamp(20px,5vw,85px)}
+.start-options button,.error-screen button{font:400 clamp(10px,1.05vw,17px) Arial,sans-serif;letter-spacing:3px;color:#eee9e0;border:0;border-bottom:1px solid #756f62;background:none;padding:10px 20px;cursor:pointer;touch-action:manipulation}
+.start-options button:hover,.start-options button:focus-visible{color:#fff;border-color:#fff;background:#ffffff09;outline:0}
+.start-options button:disabled{opacity:.25;cursor:default}
+.title-note{position:absolute;top:91%;margin:0;font-size:clamp(6px,.6vw,10px);letter-spacing:1.8px;color:#736e64;text-align:center}
+.fighter-select{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;padding:2.8cqw 5cqw;background:radial-gradient(ellipse at 50% 60%,#29241c,#050504 72%);color:#fffaf0}
+.selection-eyebrow,.tutorial-eyebrow{margin:0;color:#b9ad94;font:700 1cqw/1.3 Arial,sans-serif;letter-spacing:.3cqw}
+.fighter-select h1{margin:.9cqw 0 1.9cqw;font:italic 900 3.6cqw/1 Arial,sans-serif;letter-spacing:-.1cqw;transform:rotate(-3deg)}
+.fighter-options{display:flex;gap:2cqw}
+.fighter-card{position:relative;width:33cqw;height:31cqw;overflow:hidden;padding:0;border:1px solid #8d806255;background:#18150f;color:#fffaf0;text-align:left;cursor:pointer;touch-action:manipulation}
+.fighter-card img{width:100%;height:100%;object-fit:cover;object-position:40% center;filter:saturate(.65) brightness(.9);transition:filter .15s,transform .15s}
+.fighter-caption{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:end;gap:.7cqw;padding:2.2cqw;background:linear-gradient(transparent 45%,#060504e6 100%);text-shadow:0 2px 5px #000}
+.fighter-caption strong{font:italic 900 3.6cqw/1 Arial,sans-serif;letter-spacing:-.1cqw}
+.fighter-card:hover,.fighter-card:focus-visible{border-color:#fff4d7;outline:2px solid #fff4d7;outline-offset:4px}
+.fighter-card:hover img,.fighter-card:focus-visible img{filter:saturate(1) brightness(1.12);transform:scale(1.025)}
+.selection-note{margin:1.4cqw 0 .3cqw;font-size:1.15cqw;color:#bdb4a3}
+.text-button{padding:1cqw 2.5cqw;min-height:36px;border:0;background:none;color:#eee5d1;font:700 1.1cqw Arial,sans-serif;letter-spacing:.2cqw;cursor:pointer;touch-action:manipulation}
+.text-button:hover,.text-button:focus-visible{color:#fff;outline:1px solid #eee5d177;outline-offset:-2px}
+.tutorial{position:absolute;inset:0;z-index:5;background:#000a;color:#fffaf0;text-align:center}
+.learning .health-bars{z-index:6}.learning .health-art,.learning .round-wins{opacity:.35}
+.learning .tap-feedback{z-index:7}
+.tutorial-copy{position:absolute;top:28%;left:5%;right:5%;pointer-events:none;text-shadow:0 3px 10px #000}
+.tutorial-copy h1{margin:1.4cqw 0;font:italic 900 4.4cqw/1 Arial,sans-serif;letter-spacing:-.12cqw;transform:rotate(-3deg)}
+.tutorial-copy>p:last-child{margin:0;font-size:1.8cqw;line-height:1.4;color:#e3ddcf}
+.tutorial[data-phase="tapping"] h1,.tutorial[data-phase="complete"] h1{font-size:6cqw}
+.practice-zones{position:absolute;inset:0;display:flex}
+.practice-zone{width:50%;height:100%;padding:0;border:0;background:none;outline:0;cursor:pointer;touch-action:none}
+.practice-zone:disabled{cursor:default}
+.practice-zone:focus-visible{background:linear-gradient(transparent 58%,#ffffff06);outline:1px solid #ffffff10;outline-offset:-2px}
+.tutorial-controls{position:absolute;bottom:9%;left:5%;right:5%;margin:0;font:700 1.3cqw/1.5 Arial,sans-serif;letter-spacing:.12cqw;color:#d7cdb8;pointer-events:none;white-space:pre-wrap}
+.tutorial .action-button{position:absolute;z-index:1;left:50%;top:65%;transform:translateX(-50%);min-width:17cqw}
+.action-button{min-height:44px;padding:1.1cqw 2.8cqw;border:1px solid #eee5d199;background:#eee5d1;color:#18140d;font:700 clamp(12px,1.35cqw,22px)/1.2 Arial,sans-serif;letter-spacing:.16cqw;cursor:pointer;touch-action:manipulation}
+.action-button:hover,.action-button:focus-visible{background:#fffaf0;outline:2px solid #fffaf0;outline-offset:4px}
+.result-screen{position:absolute;inset:0;z-index:6;display:grid;place-items:center;background:linear-gradient(180deg,#0000000d,#00000026 38%,#0009);color:#fffaf0}
+.result-content{display:flex;flex-direction:column;align-items:center;padding-top:5cqw;text-align:center;text-shadow:0 3px 3px #000,0 0 24px #000b}
+.result-content h1{position:relative;margin:0 0 2cqw;font:italic 900 8.5cqw/.95 Arial,sans-serif;letter-spacing:-.3cqw;transform:rotate(-6deg)}
+.result-content h1::after{content:"";position:absolute;left:7%;right:0;bottom:-1cqw;height:.55cqw;background:#fffaf0;clip-path:polygon(0 60%,100% 0,92% 65%,0 100%)}
+.result-content p{margin:0;font:italic 900 3.2cqw/1.2 Arial,sans-serif;letter-spacing:.35cqw}
+.result-content button{margin-top:3.6cqw;min-height:44px;padding:1.1cqw 2.8cqw;border:1px solid #eee5d199;background:#0a0908b3;color:#fffaf0;font:700 clamp(12px,1.35cqw,22px)/1.2 Arial,sans-serif;letter-spacing:.16cqw;cursor:pointer;touch-action:manipulation;box-shadow:0 4px 20px #0004}
+.result-content button:hover,.result-content button:focus-visible{background:#eee5d1;color:#18140d;outline:2px solid #fffaf0;outline-offset:4px}
+.error-screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:#000e;z-index:10;font-size:16px}
+.negative .video-stack{filter:invert(1)}
+.negative .video-stack video.active{animation:impact .16s ease-out}
+.paused *{animation-play-state:paused!important}
+@keyframes impact{0%,100%{transform:translate(0)}25%{transform:translate(.3%,-.25%)}65%{transform:translate(-.2%,.15%)}}
+/* The composition stays horizontal even when the device is held upright. */
+@media(orientation:portrait){.stage{width:min(100dvh,calc(100vw * 16 / 9));transform:rotate(90deg)}.start-options{gap:8vh}.start-options button{font-size:12px;letter-spacing:2px;padding:8px 16px}.title-note{font-size:6px;letter-spacing:1px}}
+@media(prefers-reduced-motion:reduce){.negative .video-stack video.active{animation:none}.health-fill{transition:none}.tap-score{animation:tap-fade .5s linear both;transform:translate(-50%,-110%) rotate(-7deg)}.tap-ripple{animation:tap-fade .25s linear both;transform:translate(-50%,-50%)}}
+@keyframes tap-fade{0%,65%{opacity:1}100%{opacity:0}}
