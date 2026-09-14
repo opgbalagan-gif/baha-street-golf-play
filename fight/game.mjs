@@ -465,6 +465,12 @@ document.addEventListener('keydown', event => {
 document.addEventListener('keyup', event => heldKeys.delete(event.code));
 window.addEventListener('blur', () => { heldKeys.clear(); if (match.state !== 'menu') setPaused(true); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && match.state !== 'menu') setPaused(true); });
+// Run before a button changes screens, once per click (including keyboard activation).
+// Fight zones keep their feedback in input(), after a tap has actually scored.
+document.addEventListener('click', event => {
+  const button = event.target.closest?.('button:not(.touch-zone)');
+  if (button && !button.disabled && button.closest('#stage, #fullscreen-help')) tapHaptic();
+}, { capture: true });
 $('start-solo').onclick = chooseFighter;
 $('choose-forygunz').onclick = () => void start('solo', 0).catch(failure);
 $('choose-mutki').onclick = () => void start('solo', 1).catch(failure);
