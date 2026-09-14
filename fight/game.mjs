@@ -1,6 +1,7 @@
 import { Match, MAX_HEALTH, ROUND_SECONDS, MAX_ROUNDS, ROUNDS_TO_WIN } from './match.mjs';
 import { brushNumber } from './tap-art.mjs';
 import { SoundtrackPlayer } from './soundtrack.mjs?v=audio-2';
+import { setupDisplay } from './display.mjs?v=app-1';
 
 const $ = id => document.getElementById(id);
 const clips = ['logo-intro', 'opening-1', 'opening-2', 'forygunz-intro', 'mutki-intro', 'idle', 'victory', 'forygunz-hit-1', 'forygunz-hit-2', 'mutki-hit-1', 'mutki-hit-2', 'mutki-hit-3'];
@@ -25,6 +26,7 @@ const soundtrack = new SoundtrackPlayer({
   url: 'assets/drop-top-parking.mp3?v=audio-2', getContext: getAudioContext,
   onError: error => console.warn('Music unavailable:', error)
 });
+const display = setupDisplay({ onHelpOpen: () => { if (match.state !== 'menu') setPaused(true); } });
 
 function show(id, visible) { $(id).hidden = !visible; }
 function getAudioContext() {
@@ -338,6 +340,7 @@ async function finishTutorial() {
 }
 function chooseFighter() {
   if (!ready) return;
+  display.start();
   show('menu', false); show('fighter-select', true);
   $('choose-forygunz').focus({ preventScroll: true });
 }
@@ -348,6 +351,7 @@ async function start(selectedMode, selectedSide = 0) {
   mode = selectedMode; paused = false; document.body.classList.remove('paused');
   match.reset(mode, 'normal', selectedSide); match.state = 'intro';
   syncSoundtrack(true);
+  display.start();
   hitIndex.fill(0); counters.strikes = []; counters.flashes = 0; counters.intros = [];
   lastResult = null; skipIntros = false;
   updateHealth();
@@ -434,6 +438,7 @@ function setPaused(value) {
   }
 }
 function input(side, event) {
+  if (display.helpOpen) return;
   if (!$('error').hidden) return;
   if (match.state === 'result') return;
   if (paused) { setPaused(false); return; }
@@ -454,6 +459,7 @@ function input(side, event) {
   $(id).addEventListener('contextmenu', event => event.preventDefault());
 });
 document.addEventListener('keydown', event => {
+  if (display.helpOpen) return;
   if (event.repeat || heldKeys.has(event.code)) { if (['KeyA', 'KeyL', 'Space', 'Enter'].includes(event.code)) event.preventDefault(); return; }
   heldKeys.add(event.code);
   if (['Escape', 'Backspace'].includes(event.code) && !$('fighter-select').hidden) { event.preventDefault(); menu(); return; }
@@ -465,7 +471,7 @@ document.addEventListener('keydown', event => {
     if (sound) tone('go');
     return;
   }
-  if (event.code === 'KeyF') { void fullscreen(); return; }
+  if (event.code === 'KeyF') { void display.toggle(); return; }
   if (event.code === 'Backspace' && match.state !== 'menu') { event.preventDefault(); menu(); return; }
   if (['KeyA', 'KeyL'].includes(event.code) && match.state !== 'menu') {
     event.preventDefault(); input(event.code === 'KeyA' ? 0 : 1); return;
@@ -477,15 +483,6 @@ document.addEventListener('keydown', event => {
 document.addEventListener('keyup', event => heldKeys.delete(event.code));
 window.addEventListener('blur', () => { heldKeys.clear(); if (match.state !== 'menu') setPaused(true); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && match.state !== 'menu') setPaused(true); });
-async function fullscreen() {
-  try {
-    if (document.fullscreenElement) await document.exitFullscreen();
-    else if (document.documentElement.requestFullscreen) {
-      await document.documentElement.requestFullscreen();
-      try { await screen.orientation?.lock('landscape'); } catch { /* CSS also preserves landscape. */ }
-    }
-  } catch { /* Embedded browsers may not support fullscreen. */ }
-}
 $('start-solo').onclick = chooseFighter;
 $('choose-forygunz').onclick = () => void start('solo', 0).catch(failure);
 $('choose-mutki').onclick = () => void start('solo', 1).catch(failure);
