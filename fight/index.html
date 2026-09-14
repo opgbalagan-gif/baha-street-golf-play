@@ -6,11 +6,12 @@
   <meta name="theme-color" content="#000000">
   <title>DOGMA FIGHT — Короли улиц</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64'/%3E%3Ctext x='10' y='50' font-size='50' fill='white' font-family='serif'%3ED%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="style.css?v=fast-1">
+  <link rel="stylesheet" href="style.css?v=audio-2">
 </head>
 <body>
   <main class="stage" id="stage" aria-label="DOGMA. Короли улиц. Горизонтальный файтинг">
     <div class="video-stack" id="videos" aria-hidden="true" hidden></div>
+    <img class="corner-logo" src="assets/dogma-watermark.webp" alt="" aria-hidden="true" draggable="false" loading="lazy">
     <div class="health-bars" id="hud" hidden>
       <div class="health-art" id="health-left" role="progressbar" aria-label="Здоровье FORYGUNZ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><img src="assets/health-empty.webp" alt=""><img class="health-fill" src="assets/health-full.webp" alt=""></div>
       <div class="health-art mirrored" id="health-right" role="progressbar" aria-label="Здоровье Мутки" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><img src="assets/health-empty.webp" alt=""><img class="health-fill" src="assets/health-full.webp" alt=""></div>
@@ -67,7 +68,6 @@
     <section class="error-screen" id="error" role="alert" hidden><p>Не удалось загрузить видео или звук.</p><button id="retry">ПОПРОБОВАТЬ ЕЩЁ РАЗ</button></section>
   </main>
   <noscript>Включи JavaScript, чтобы запустить игру.</noscript>
-  <audio id="soundtrack" data-src="assets/drop-top-parking.mp3?v=fast-1" preload="none" loop hidden></audio>
-  <script type="module" src="game.mjs?v=fast-1"></script>
+  <script type="module" src="game.mjs?v=audio-2"></script>
 </body>
 </html>

@@ -1,11 +1,10 @@
 import { Match, MAX_HEALTH, ROUND_SECONDS, MAX_ROUNDS, ROUNDS_TO_WIN } from './match.mjs';
 import { brushNumber } from './tap-art.mjs';
+import { SoundtrackPlayer } from './soundtrack.mjs?v=audio-2';
 
 const $ = id => document.getElementById(id);
 const clips = ['logo-intro', 'opening-1', 'opening-2', 'forygunz-intro', 'mutki-intro', 'idle', 'victory', 'forygunz-hit-1', 'forygunz-hit-2', 'mutki-hit-1', 'mutki-hit-2', 'mutki-hit-3'];
 const introSequence = ['logo-intro', 'opening-1', 'opening-2', 'forygunz-intro', 'mutki-intro'];
-const soundtrack = $('soundtrack');
-soundtrack.volume = .7;
 const match = new Match();
 const videoMap = new Map();
 const heldKeys = new Set();
@@ -21,24 +20,26 @@ const practiceTaps = [0, 0];
 let tutorialPhase = null, tutorialRemaining = 0;
 let timerLabel = '';
 let runAbort = new AbortController();
-const mediaVersion = 'fast-1';
+const mediaVersion = 'audio-2';
+const soundtrack = new SoundtrackPlayer({
+  url: 'assets/drop-top-parking.mp3?v=audio-2', getContext: getAudioContext,
+  onError: error => console.warn('Music unavailable:', error)
+});
 
 function show(id, visible) { $(id).hidden = !visible; }
+function getAudioContext() {
+  audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+  return audioContext;
+}
 function syncSoundtrack(restart = false) {
-  if (restart) soundtrack.currentTime = 0;
-  soundtrack.muted = !sound;
-  if (paused || !sound || match.state === 'menu') { soundtrack.pause(); return; }
-  if (!soundtrack.getAttribute('src')) soundtrack.src = soundtrack.dataset.src;
-  const token = run;
-  // Called directly from Start/resume so browsers allow music after the gesture.
-  void soundtrack.play().catch(error => {
-    if (token === run && !paused && sound && match.state !== 'menu' && error.name !== 'AbortError') console.warn('Music unavailable:', error);
-  });
+  const speaking = match.state === 'intro' && ['forygunz-intro', 'mutki-intro'].includes(active?.dataset.clip);
+  soundtrack.setVolume(speaking ? .3 : .7);
+  soundtrack.setPlaying(!paused && sound && match.state !== 'menu', { restart });
 }
 function tone(kind = 'tap') {
   if (!sound) return;
   try {
-    audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+    getAudioContext();
     if (audioContext.state === 'suspended') void audioContext.resume().catch(() => {});
     const t = audioContext.currentTime;
     const oscillator = audioContext.createOscillator(), gain = audioContext.createGain();
@@ -59,7 +60,7 @@ function delay(milliseconds, token = run) {
 function cancelRun() {
   run++;
   runAbort.abort(); runAbort = new AbortController();
-  soundtrack.pause();
+  soundtrack.setPlaying(false);
   cancelClip?.();
   for (const item of scheduled) item.resolve(false);
   scheduled = [];
@@ -133,6 +134,7 @@ async function activate(name, token = run, signal = runAbort.signal) {
     if (active && active !== video) { active.pause(); active.classList.remove('active'); }
     active = video; video.classList.add('active');
     if (paused) video.pause();
+    else syncSoundtrack();
     const nextIntro = introSequence[introSequence.indexOf(name) + 1];
     if (match.state === 'intro' && introSequence.includes(name) && !skipIntros) requestMedia(nextIntro || 'idle');
     if (name === 'idle') warmFight();
@@ -416,7 +418,7 @@ function menu() {
   cancelRun(); paused = false; document.body.classList.remove('paused');
   for (const video of videoMap.values()) video.pause();
   match.reset(mode, 'normal', match.humanSide);
-  soundtrack.currentTime = 0;
+  soundtrack.reset();
   show('menu', true); show('hud', false); show('videos', false); show('touch-zones', false);
   updateHealth();
   $('start-solo').focus({ preventScroll: true });
@@ -435,6 +437,7 @@ function input(side, event) {
   if (!$('error').hidden) return;
   if (match.state === 'result') return;
   if (paused) { setPaused(false); return; }
+  syncSoundtrack();
   if (match.state === 'intro') { skipIntros = true; cancelClip?.(); return; }
   if (match.state === 'tutorial') { practice(side, event); return; }
   advanceTo(performance.now());
@@ -496,7 +499,8 @@ async function load() {
     const video = document.createElement('video');
     video.dataset.clip = name; video.preload = 'none'; video.playsInline = true; video.muted = true;
     video.setAttribute('playsinline', ''); video.setAttribute('webkit-playsinline', '');
-    video.loop = name === 'idle'; video.volume = introSequence.includes(name) ? .4 : .7;
+    video.loop = name === 'idle';
+    video.volume = ['forygunz-intro', 'mutki-intro'].includes(name) ? .9 : introSequence.includes(name) ? .4 : .7;
     videoMap.set(name, video); $('videos').append(video);
   }
   // Menu and fighter selection do not depend on any video or audio download.
@@ -509,7 +513,7 @@ Object.defineProperty(window, 'fight', { value: Object.freeze({ snapshot: () => 
   state: match.state, health: [...match.health], taps: [...match.taps], totalTaps: [...match.totalTaps],
   round: match.round, remaining: match.remaining, winner: match.winner, champion: match.champion,
   exchange: match.exchange, totalExchanges: match.totalExchanges, roundWins: [...match.roundWins], roundWinner: match.roundWinner,
-  mode, humanSide: match.humanSide, botSide: mode === 'solo' ? match.botSide : null, practiceTaps: [...practiceTaps], tutorialPhase, tutorialRemaining, paused, flash, ready, sound, clip: active?.dataset.clip,
+  mode, humanSide: match.humanSide, botSide: mode === 'solo' ? match.botSide : null, practiceTaps: [...practiceTaps], tutorialPhase, tutorialRemaining, paused, flash, ready, sound, music: soundtrack.snapshot(), clip: active?.dataset.clip,
   negativeFlashes: counters.flashes, strikes: counters.strikes.map(value => ({ ...value })),
   intros: [...counters.intros], lastResult: lastResult ? { ...lastResult, health: [...lastResult.health], taps: [...lastResult.taps], roundWins: [...lastResult.roundWins] } : null
 }) }) });

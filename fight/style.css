@@ -7,6 +7,8 @@ body{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(
 .video-stack{background:#000 url('assets/poster.jpg') center/contain no-repeat}
 .video-stack video{object-fit:contain;opacity:0;pointer-events:none;background:#000}
 .video-stack video.active{opacity:1}
+.corner-logo{display:none;position:absolute;right:1.4%;bottom:1.7%;width:15%;height:auto;opacity:.5;mix-blend-mode:screen;pointer-events:none;z-index:2}
+.video-stack:not([hidden])+.corner-logo{display:block}
 .buffering{position:absolute;inset:0;z-index:4;display:grid;place-items:center;pointer-events:none}
 .buffering span{width:3.5cqw;aspect-ratio:1;border:2px solid #ffffff35;border-top-color:#fffaf0;border-radius:50%;animation:buffer-spin .8s linear infinite;filter:drop-shadow(0 2px 4px #000)}
 @keyframes buffer-spin{to{transform:rotate(360deg)}}
